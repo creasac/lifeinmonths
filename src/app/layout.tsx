@@ -14,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Life in Weeks",
-  description: "Visualize your life in weeks - inspired by Wait But Why",
+  title: "Life in Months",
+  description: "Visualize your life in months - inspired by Wait But Why",
 };
 
 export default function RootLayout({

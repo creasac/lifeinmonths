@@ -6,7 +6,6 @@ interface User {
   id: number;
   username: string;
   dateOfBirth: string | null;
-  expectedLifeYears: number;
 }
 
 interface AuthContextType {

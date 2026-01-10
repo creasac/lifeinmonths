@@ -5,7 +5,6 @@ export const users = sqliteTable("users", {
   username: text("username").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   dateOfBirth: text("date_of_birth"), // ISO date string
-  expectedLifeYears: integer("expected_life_years").default(80),
   messages: text("messages").default("[]"), // JSON array of strings
   createdAt: text("created_at").default("CURRENT_TIMESTAMP"),
 });

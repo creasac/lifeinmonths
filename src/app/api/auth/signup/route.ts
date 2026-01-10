@@ -6,7 +6,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const { username, password, dateOfBirth, expectedLifeYears } = await request.json();
+    const { username, password, dateOfBirth } = await request.json();
 
     if (!username || !password) {
       return NextResponse.json(
@@ -44,7 +44,6 @@ export async function POST(request: NextRequest) {
         username: username.toLowerCase(),
         passwordHash,
         dateOfBirth: dateOfBirth || null,
-        expectedLifeYears: expectedLifeYears || 80,
       })
       .returning();
 
@@ -67,14 +66,18 @@ export async function POST(request: NextRequest) {
 
     return response;
   } catch (error: unknown) {
-    if (error && typeof error === "object" && "message" in error) {
-      const errorMessage = (error as { message: string }).message;
-      if (errorMessage.includes("UNIQUE constraint failed")) {
-        return NextResponse.json(
-          { error: "Username already taken" },
-          { status: 400 }
-        );
-      }
+    // Handle duplicate username error (works with both SQLite and Turso/libsql)
+    const errorString = String(error);
+    if (
+      errorString.includes("UNIQUE constraint failed") ||
+      errorString.includes("SQLITE_CONSTRAINT") ||
+      errorString.includes("unique constraint") ||
+      errorString.includes("already exists")
+    ) {
+      return NextResponse.json(
+        { error: "Username already taken" },
+        { status: 400 }
+      );
     }
     console.error("Signup error:", error);
     return NextResponse.json(

@@ -22,7 +22,6 @@ export async function GET() {
 
     return NextResponse.json({
       dateOfBirth: user.dateOfBirth,
-      expectedLifeYears: user.expectedLifeYears,
       messages: user.messages ? JSON.parse(user.messages) : [],
       cellData: lifeData?.cellData ? JSON.parse(lifeData.cellData) : {},
     });
@@ -46,22 +45,11 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const { dateOfBirth, expectedLifeYears, messages, cellData } = await request.json();
-
-    // Validate expectedLifeYears
-    if (expectedLifeYears !== undefined) {
-      if (expectedLifeYears < 1 || expectedLifeYears > 100) {
-        return NextResponse.json(
-          { error: "Expected life years must be between 1 and 100" },
-          { status: 400 }
-        );
-      }
-    }
+    const { dateOfBirth, messages, cellData } = await request.json();
 
     // Update user profile
     const updateData: Record<string, unknown> = {
       dateOfBirth: dateOfBirth ?? user.dateOfBirth,
-      expectedLifeYears: expectedLifeYears ?? user.expectedLifeYears,
     };
     
     if (messages !== undefined) {

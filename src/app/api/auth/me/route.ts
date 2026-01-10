@@ -14,7 +14,6 @@ export async function GET() {
         id: user.id,
         username: user.username,
         dateOfBirth: user.dateOfBirth,
-        expectedLifeYears: user.expectedLifeYears,
       },
     });
   } catch (error) {
