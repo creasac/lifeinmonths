@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
 
     if (!user) {
       return NextResponse.json(
-        { error: "Invalid username or password" },
+        { error: "Username not found" },
         { status: 401 }
       );
     }
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     if (!validPassword) {
       return NextResponse.json(
-        { error: "Invalid username or password" },
+        { error: "Incorrect password" },
         { status: 401 }
       );
     }

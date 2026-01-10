@@ -67,12 +67,16 @@ export async function POST(request: NextRequest) {
     return response;
   } catch (error: unknown) {
     // Handle duplicate username error (works with both SQLite and Turso/libsql)
+    // Check both the error itself and any nested cause for constraint violations
     const errorString = String(error);
+    const causeString = error && typeof error === 'object' && 'cause' in error ? String(error.cause) : '';
+    const fullErrorText = errorString + causeString;
+    
     if (
-      errorString.includes("UNIQUE constraint failed") ||
-      errorString.includes("SQLITE_CONSTRAINT") ||
-      errorString.includes("unique constraint") ||
-      errorString.includes("already exists")
+      fullErrorText.includes("UNIQUE constraint failed") ||
+      fullErrorText.includes("SQLITE_CONSTRAINT") ||
+      fullErrorText.includes("unique constraint") ||
+      fullErrorText.includes("already exists")
     ) {
       return NextResponse.json(
         { error: "Username already taken" },
