@@ -2,6 +2,8 @@
 
 A visual representation of your life as a grid of months. Each circle represents one month, helping you visualize time in a meaningful way.
 
+Inspired by Tim Urban's [Your Life in Weeks](https://waitbutwhy.com/2014/05/life-weeks.html) from Wait But Why.
+
 ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Turso](https://img.shields.io/badge/Database-Turso-teal)
 
 ## Features
@@ -28,7 +30,7 @@ A visual representation of your life as a grid of months. Each circle represents
 
 ### One-Click Deploy to Vercel
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftimsinadipesh%2Flifeinweeks&env=TURSO_DATABASE_URL,TURSO_AUTH_TOKEN&envDescription=Turso%20database%20credentials&envLink=https%3A%2F%2Fturso.tech)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftimsinadipesh%2Flifeinmonths&env=TURSO_DATABASE_URL,TURSO_AUTH_TOKEN&envDescription=Turso%20database%20credentials&envLink=https%3A%2F%2Fturso.tech)
 
 1. Click the button above
 2. Create a free [Turso](https://turso.tech) database
@@ -47,13 +49,13 @@ curl -sSfL https://get.tur.so/install.sh | bash
 turso auth login
 
 # Create database
-turso db create lifeinweeks
+turso db create lifeinmonths
 
 # Get your database URL
-turso db show lifeinweeks --url
+turso db show lifeinmonths --url
 
 # Create auth token
-turso db tokens create lifeinweeks
+turso db tokens create lifeinmonths
 ```
 
 #### 2. Deploy to Vercel
@@ -88,8 +90,8 @@ npm run db:push
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/timsinadipesh/lifeinweeks.git
-   cd lifeinweeks
+   git clone https://github.com/timsinadipesh/lifeinmonths.git
+   cd lifeinmonths
    ```
 
 2. Install dependencies:
