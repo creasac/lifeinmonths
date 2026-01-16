@@ -14,6 +14,7 @@ Inspired by Tim Urban's [Your Life in Weeks](https://waitbutwhy.com/2014/05/life
 - **Color & Label Cells**: Click any cell to add colors and labels for life events
 - **Smart Color Selection**: Automatically suggests unused colors, then generates new harmonious colors
 - **Personal Messages**: Add motivational messages that display randomly on each visit
+- **Public Profile**: Share your life grid via `/{username}` - viewable by anyone
 - **Guest Mode**: Try without an account - data persists in your session
 - **User Accounts**: Sign up to save your life grid permanently
 
@@ -129,6 +130,7 @@ npm run db:push
 3. Choose a color and optionally add a label (e.g., "College", "First Job")
 4. Sign up to save your data permanently
 5. Access settings via the gear icon to update your birth date or add personal messages
+6. Share your profile at `/{username}` - visitors can view (owners can edit)
 
 ## Scripts
 

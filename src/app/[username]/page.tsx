@@ -1,48 +1,48 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo } from "react";
-import { useAuth } from "./AuthProvider";
-import { AuthModal } from "./AuthModal";
-import { LifeGrid } from "./LifeGrid";
+import { useAuth } from "@/components/AuthProvider";
+import { AuthModal } from "@/components/AuthModal";
+import { LifeGrid } from "@/components/LifeGrid";
 import { CellDataMap } from "@/lib/types";
-import { calculateMonthsLived, getCellKey } from "@/lib/utils";
+import { calculateMonthsLived } from "@/lib/utils";
 import Link from "next/link";
+import { useParams, notFound } from "next/navigation";
 
-export function LifeInWeeks() {
-  const { user, loading } = useAuth();
+export default function ProfilePage() {
+  const params = useParams();
+  const username = params.username as string;
+  const { user, loading: authLoading } = useAuth();
+  
+  // Profile data state
+  const [profileData, setProfileData] = useState<{
+    username: string;
+    dateOfBirth: string | null;
+    cellData: CellDataMap;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notFoundError, setNotFoundError] = useState(false);
+  
+  // Local state for editing (only used if owner)
+  const [cellData, setCellData] = useState<CellDataMap>({});
   const [showAuthModal, setShowAuthModal] = useState(false);
   
-  // Form state - separate year and month for easier input
-  const [birthYear, setBirthYear] = useState<string>("");
-  const [birthMonth, setBirthMonth] = useState<string>("");
-  const expectedLifeYears = 80; // Fixed at 80 years
-  const [cellData, setCellData] = useState<CellDataMap>({});
-  
-  // UI state
+  // UI state for saving
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [randomMessage, setRandomMessage] = useState<string | null>(null);
-  const [hoveredCellInfo, setHoveredCellInfo] = useState<{ month: number; year: number; label?: string; color?: string } | null>(null);
-
-  // Compute dateOfBirth from parts (day defaults to 01)
-  const dateOfBirth = useMemo(() => {
-    if (birthYear && birthMonth) {
-      const y = parseInt(birthYear);
-      const m = parseInt(birthMonth);
-      if (!isNaN(y) && !isNaN(m) && y > 1900 && y <= new Date().getFullYear() && m >= 1 && m <= 12) {
-        return `${y}-${String(m).padStart(2, '0')}-01`;
-      }
-    }
-    return "";
-  }, [birthYear, birthMonth]);
-
+  
+  const expectedLifeYears = 80;
+  
+  // Check if current user is the owner of this profile
+  const isOwner = user && profileData && user.username === profileData.username;
+  
   // Compute labeled sections from cellData with first month for sorting
   const labeledSections = useMemo(() => {
+    const data = isOwner ? cellData : (profileData?.cellData || {});
     const sections = new Map<string, { color: string; count: number; firstMonthIndex: number }>();
-    Object.entries(cellData).forEach(([key, cell]) => {
+    Object.entries(data).forEach(([key, cell]) => {
       if (cell.label) {
-        // Parse month-year key to get month index
         const [month, year] = key.split('-').map(Number);
         const monthIndex = year * 12 + month;
         
@@ -56,47 +56,45 @@ export function LifeInWeeks() {
       }
     });
     return sections;
-  }, [cellData]);
+  }, [isOwner, cellData, profileData?.cellData]);
 
   // Sort labeled sections by first month index
   const sortedLabeledSections = useMemo(() => {
     return Array.from(labeledSections.entries()).sort((a, b) => a[1].firstMonthIndex - b[1].firstMonthIndex);
   }, [labeledSections]);
 
-  // Load user data
+  // Fetch profile data
   useEffect(() => {
-    if (user) {
-      fetchUserData();
-    }
-  }, [user]);
-
-  const fetchUserData = async () => {
-    try {
-      const res = await fetch("/api/life-data");
-      if (res.ok) {
+    async function fetchProfile() {
+      try {
+        const res = await fetch(`/api/profile/${encodeURIComponent(username)}`);
+        if (res.status === 404) {
+          setNotFoundError(true);
+          setLoading(false);
+          return;
+        }
+        if (!res.ok) {
+          throw new Error("Failed to fetch profile");
+        }
         const data = await res.json();
-        if (data.dateOfBirth) {
-          const [y, m] = data.dateOfBirth.split('-');
-          setBirthYear(y);
-          setBirthMonth(String(parseInt(m)));
-        }
-        if (data.cellData) {
-          setCellData(data.cellData);
-        }
-        if (data.messages && data.messages.length > 0) {
-          // Pick a random message
-          const randomIndex = Math.floor(Math.random() * data.messages.length);
-          setRandomMessage(data.messages[randomIndex]);
-        }
+        setProfileData(data);
+        setCellData(data.cellData || {});
+      } catch (error) {
+        console.error("Failed to fetch profile:", error);
+        setNotFoundError(true);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Failed to fetch user data:", error);
     }
-  };
+    
+    if (username) {
+      fetchProfile();
+    }
+  }, [username]);
 
-  // Auto-save with debounce
+  // Save data function (only for owner)
   const saveData = useCallback(async () => {
-    if (!user) return;
+    if (!user || !isOwner) return;
 
     setIsSaving(true);
     try {
@@ -104,7 +102,6 @@ export function LifeInWeeks() {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          dateOfBirth: dateOfBirth || null,
           cellData,
         }),
       });
@@ -118,35 +115,26 @@ export function LifeInWeeks() {
     } finally {
       setIsSaving(false);
     }
-  }, [user, dateOfBirth, expectedLifeYears, cellData]);
+  }, [user, isOwner, cellData]);
 
   // Auto-save when data changes (debounced)
   useEffect(() => {
-    if (!user || !hasUnsavedChanges) return;
+    if (!isOwner || !hasUnsavedChanges) return;
 
     const timer = setTimeout(() => {
       saveData();
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [user, hasUnsavedChanges, saveData]);
-
-  const handleBirthYearChange = (value: string) => {
-    setBirthYear(value);
-    if (user) setHasUnsavedChanges(true);
-  };
-
-  const handleBirthMonthChange = (value: string) => {
-    setBirthMonth(value);
-    if (user) setHasUnsavedChanges(true);
-  };
+  }, [isOwner, hasUnsavedChanges, saveData]);
 
   const handleCellDataChange = (newCellData: CellDataMap) => {
     setCellData(newCellData);
-    if (user) setHasUnsavedChanges(true);
+    if (isOwner) setHasUnsavedChanges(true);
   };
 
-  if (loading) {
+  // Loading state
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -154,12 +142,29 @@ export function LifeInWeeks() {
     );
   }
 
+  // Not found state
+  if (notFoundError || !profileData) {
+    return (
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
+        <h1 className="text-2xl font-bold text-gray-900">User not found</h1>
+        <p className="text-gray-600">The user @{username} doesn&apos;t exist.</p>
+        <Link href="/" className="text-blue-600 hover:underline">
+          Go back home
+        </Link>
+      </div>
+    );
+  }
+
   // Calculate months
+  const dateOfBirth = profileData.dateOfBirth;
   const monthsLived = dateOfBirth
     ? calculateMonthsLived(new Date(dateOfBirth))
     : 0;
   const totalMonths = expectedLifeYears * 12;
   const monthsToLive = Math.max(0, totalMonths - monthsLived);
+
+  // Use local cellData if owner, otherwise use profile data
+  const displayCellData = isOwner ? cellData : profileData.cellData;
 
   // Icons
   const SettingsIcon = () => (
@@ -169,31 +174,27 @@ export function LifeInWeeks() {
     </svg>
   );
 
-  const ProfileIcon = () => (
-    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-    </svg>
-  );
-
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="border-b border-gray-200">
         <div className="px-4 py-3 flex items-center justify-between">
-          <h1 className="text-xl font-bold text-gray-900">Your Life in Months</h1>
+          <div className="flex items-center gap-2">
+            <Link href="/" className="text-xl font-bold text-gray-900 hover:text-blue-600">
+              Life in Months
+            </Link>
+            <span className="text-gray-400">/</span>
+            <span className="text-gray-700">@{profileData.username}</span>
+            {isOwner && (
+              <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">You</span>
+            )}
+          </div>
           
           <div className="flex items-center gap-3">
-            {user ? (
+            {isOwner ? (
               <>
                 {isSaving && <span className="text-sm text-gray-500">Saving...</span>}
                 {lastSaved && !isSaving && <span className="text-sm text-gray-400">Saved</span>}
-                <Link
-                  href={`/${user.username}`}
-                  className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md"
-                  title={`@${user.username} - View your public profile`}
-                >
-                  <ProfileIcon />
-                </Link>
                 <Link
                   href="/settings"
                   className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md"
@@ -202,64 +203,30 @@ export function LifeInWeeks() {
                   <SettingsIcon />
                 </Link>
               </>
+            ) : user ? (
+              <Link
+                href={`/${user.username}`}
+                className="text-sm text-blue-600 hover:underline"
+              >
+                View your profile
+              </Link>
             ) : (
-              <>
-                <span className="text-sm text-amber-600">⚠️ Login to save</span>
-                <button
-                  onClick={() => setShowAuthModal(true)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
-                >
-                  Login / Sign up
-                </button>
-              </>
+              <button
+                onClick={() => setShowAuthModal(true)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+              >
+                Login / Sign up
+              </button>
             )}
           </div>
         </div>
       </header>
 
-      {/* Main content - scrollable horizontally */}
+      {/* Main content */}
       <main className="px-4 py-4 overflow-x-auto">
-        {/* For non-logged-in users: show date inputs */}
-        {!user && (
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mb-4">
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">Born</span>
-              <input
-                type="number"
-                min="1900"
-                max={new Date().getFullYear()}
-                value={birthYear}
-                onChange={(e) => handleBirthYearChange(e.target.value)}
-                placeholder="Year"
-                className="w-20 px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-900 text-sm"
-              />
-              <span className="text-gray-400">/</span>
-              <select
-                value={birthMonth}
-                onChange={(e) => handleBirthMonthChange(e.target.value)}
-                className="px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 text-gray-900 text-sm"
-              >
-                <option value="">Month</option>
-                <option value="1">January</option>
-                <option value="2">February</option>
-                <option value="3">March</option>
-                <option value="4">April</option>
-                <option value="5">May</option>
-                <option value="6">June</option>
-                <option value="7">July</option>
-                <option value="8">August</option>
-                <option value="9">September</option>
-                <option value="10">October</option>
-                <option value="11">November</option>
-                <option value="12">December</option>
-              </select>
-            </div>
-          </div>
-        )}
-
         {/* Grid and stats layout */}
         <div className="flex flex-col gap-4">
-          {/* Stats row - above grid */}
+          {/* Stats row */}
           <div className="flex flex-wrap items-center gap-4">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-red-600 rounded-full border border-gray-700"></div>
@@ -298,16 +265,18 @@ export function LifeInWeeks() {
             <LifeGrid
               expectedLifeYears={expectedLifeYears}
               dateOfBirth={dateOfBirth || null}
-              cellData={cellData}
+              cellData={displayCellData}
               onCellDataChange={handleCellDataChange}
-              isEditable={true}
+              isEditable={isOwner || false}
             />
           </div>
 
-          {/* Random message - only for logged in users with messages */}
-          {user && randomMessage && (
+          {/* Viewing notice for non-owners */}
+          {!isOwner && (
             <div className="mt-4 text-center">
-              <p className="text-lg font-semibold text-gray-900">{randomMessage}</p>
+              <p className="text-sm text-gray-500">
+                Viewing @{profileData.username}&apos;s life in months
+              </p>
             </div>
           )}
         </div>
@@ -317,8 +286,6 @@ export function LifeInWeeks() {
       <AuthModal 
         isOpen={showAuthModal} 
         onClose={() => setShowAuthModal(false)}
-        initialDateOfBirth={dateOfBirth || undefined}
-        initialCellData={cellData}
       />
     </div>
   );
