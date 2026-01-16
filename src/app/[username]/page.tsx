@@ -31,6 +31,7 @@ export default function ProfilePage() {
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [randomMessage, setRandomMessage] = useState<string | null>(null);
   
   const expectedLifeYears = 80;
   
@@ -91,6 +92,26 @@ export default function ProfilePage() {
       fetchProfile();
     }
   }, [username]);
+
+  // Fetch messages for owner
+  useEffect(() => {
+    async function fetchMessages() {
+      if (!isOwner) return;
+      try {
+        const res = await fetch("/api/life-data");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.messages && data.messages.length > 0) {
+            const randomIndex = Math.floor(Math.random() * data.messages.length);
+            setRandomMessage(data.messages[randomIndex]);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to fetch messages:", error);
+      }
+    }
+    fetchMessages();
+  }, [isOwner]);
 
   // Save data function (only for owner)
   const saveData = useCallback(async () => {
@@ -225,9 +246,9 @@ export default function ProfilePage() {
       {/* Main content */}
       <main className="px-4 py-4 overflow-x-auto">
         {/* Grid and stats layout */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 items-center">
           {/* Stats row */}
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-red-600 rounded-full border border-gray-700"></div>
               <span className="text-gray-700 text-sm">
@@ -261,7 +282,7 @@ export default function ProfilePage() {
           </div>
 
           {/* Life Grid */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 flex justify-center">
             <LifeGrid
               expectedLifeYears={expectedLifeYears}
               dateOfBirth={dateOfBirth || null}
@@ -270,6 +291,13 @@ export default function ProfilePage() {
               isEditable={isOwner || false}
             />
           </div>
+
+          {/* Random message - only for owner */}
+          {isOwner && randomMessage && (
+            <div className="mt-4 text-center">
+              <p className="text-lg font-semibold text-gray-900">{randomMessage}</p>
+            </div>
+          )}
 
           {/* Viewing notice for non-owners */}
           {!isOwner && (

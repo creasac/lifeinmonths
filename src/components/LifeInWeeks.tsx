@@ -258,9 +258,9 @@ export function LifeInWeeks() {
         )}
 
         {/* Grid and stats layout */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 items-center">
           {/* Stats row - above grid */}
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center justify-center gap-4">
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-red-600 rounded-full border border-gray-700"></div>
               <span className="text-gray-700 text-sm">
@@ -294,7 +294,7 @@ export function LifeInWeeks() {
           </div>
 
           {/* Life Grid */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 flex justify-center">
             <LifeGrid
               expectedLifeYears={expectedLifeYears}
               dateOfBirth={dateOfBirth || null}
