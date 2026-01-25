@@ -454,7 +454,7 @@ export function LifeGrid({
               className="text-xs text-gray-400 text-center"
               style={{ width: `${cellSize}px`, minWidth: `${cellSize}px` }}
             >
-              {(i + 1) % 5 === 0 ? i + 1 : ""}
+              {i % 5 === 0 && i !== 0 ? i : ""}
             </div>
           ))}
         </div>
