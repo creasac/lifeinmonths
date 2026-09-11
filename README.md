@@ -6,6 +6,8 @@ Inspired by Tim Urban's [Your Life in Weeks](https://waitbutwhy.com/2014/05/life
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![TypeScript](https://img.shields.io/badge/TypeScript-5-blue) ![Turso](https://img.shields.io/badge/Database-Turso-teal)
 
+<img width="1646" height="1623" alt="lifeinmonths1" src="https://github.com/user-attachments/assets/407da235-ae33-4e1f-8b7f-9ee0a35d8472" />
+
 ## Features
 
 - **Visual Life Grid**: 80 years × 12 months displayed as a grid of circular cells
